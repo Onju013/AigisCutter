@@ -1,0 +1,192 @@
+﻿<Window
+    x:Class="AigisCutter.View.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:m="clr-namespace:AigisCutter.Model"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+    xmlns:v="clr-namespace:AigisCutter.View"
+    xmlns:vm="clr-namespace:AigisCutter.ViewModel"
+    Title="{Binding Title}"
+    Width="300"
+    Height="400"
+    AllowDrop="True"
+    Background="LightGray"
+    DragOver="Window_DragOver"
+    Drop="Window_Drop"
+    Loaded="Window_Loaded"
+    mc:Ignorable="d">
+
+    <Window.DataContext>
+        <vm:MainWindowModel />
+    </Window.DataContext>
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="24" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="76" />
+            <RowDefinition Height="64" />
+            <RowDefinition Height="32" />
+            <RowDefinition Height="32" />
+        </Grid.RowDefinitions>
+
+        <Label Grid.Row="0" Content="↓に画像ファイルをD＆D" />
+        <ListBox
+            x:Name="listBoxFilePath"
+            Grid.Row="1"
+            ItemsSource="{Binding FilePaths}"
+            ScrollViewer.CanContentScroll="True">
+            <ListBox.ToolTip>
+                ここに処理したい画像ファイルをD＆Dしてください。
+            </ListBox.ToolTip>
+        </ListBox>
+
+        <StackPanel Grid.Row="2" Margin="0,4,0,0">
+            <RadioButton Content="PCブラウザ版（長方形抽出、白背景依存強め）" IsChecked="{Binding IsPcSq.Value}" />
+            <RadioButton Content="PCブラウザ版（エッジ抽出）" IsChecked="{Binding IsPcEdge.Value}" />
+            <RadioButton Content="iOS（中央最大サイズ）" IsChecked="{Binding IsIos.Value}">
+                <RadioButton.ToolTip>
+                    <TextBlock>
+                        可能な限り中央で大きな3:2領域を抽出します。<LineBreak />
+                        ゲーム領域が中央にあり、かつ余白が左右または上下であれば抽出できます。</TextBlock>
+                </RadioButton.ToolTip>
+            </RadioButton>
+            <RadioButton Content="Android版（黒背景依存強め）" IsChecked="{Binding IsIosAndroid.Value}" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="3" Margin="0,8,0,0">
+            <StackPanel
+                Grid.ColumnSpan="2"
+                Height="24"
+                Orientation="Horizontal"
+                Visibility="{Binding VisiblitySizeOption.Value}">
+
+                <v:NaturalNumberBox
+                    Width="64"
+                    Max="8192"
+                    Min="0"
+                    Text="{Binding Width.Value}">
+
+                    <v:NaturalNumberBox.ToolTip>
+                        ゲーム領域の幅を入力してください。
+                    </v:NaturalNumberBox.ToolTip>
+                </v:NaturalNumberBox>
+                <Label
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    Content="×" />
+                <v:NaturalNumberBox
+                    Width="64"
+                    HorizontalAlignment="Left"
+                    Max="8192"
+                    Min="0"
+                    Text="{Binding Height.Value}">
+                    <v:NaturalNumberBox.ToolTip>
+                        ゲーム領域の高さを入力してください。
+                    </v:NaturalNumberBox.ToolTip>
+                </v:NaturalNumberBox>
+
+                <Label Margin="5,0,0,0" Content="zoom" />
+                <ComboBox
+                    Width="70"
+                    DisplayMemberPath="ZoomP"
+                    ItemsSource="{Binding ZoomSet}"
+                    SelectedItem="{Binding SelectedZoom.Value}">
+                    <ComboBox.ToolTip>
+                        ブラウザの拡大率を設定すると、それに合わせたサイズの数値になります。
+                    </ComboBox.ToolTip>
+                </ComboBox>
+            </StackPanel>
+
+            <Grid>
+                <StackPanel
+                    Height="24"
+                    Margin="0,8,0,0"
+                    Orientation="Horizontal"
+                    Visibility="{Binding VisiblityDeltaOption.Value}">
+                    <Label Content="背景許容誤差" />
+                    <v:NaturalNumberBox
+                        Width="48"
+                        Max="255"
+                        Min="0"
+                        Text="{Binding Delta.Value}">
+                        <v:NaturalNumberBox.ToolTip>
+                            <TextBlock>
+                                誤抽出時に変更するとどうにかなるかもしれません。
+                            </TextBlock>
+                        </v:NaturalNumberBox.ToolTip>
+                    </v:NaturalNumberBox>
+                </StackPanel>
+
+                <StackPanel
+                    Height="24"
+                    Margin="0,8,0,0"
+                    Orientation="Horizontal"
+                    Visibility="{Binding VisiblityHomebarOption.Value}">
+                    <Label Content="ホームバーの高さ" />
+                    <v:NaturalNumberBox
+                        Width="48"
+                        Max="128"
+                        Min="0"
+                        Text="{Binding HomebarHeight.Value}" />
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+
+
+        <Grid Grid.Row="4" Margin="0,6,0,0">
+            <Button
+                Width="70"
+                Height="26"
+                Margin="190,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Command="{Binding ExecuteCommand}"
+                Content="抽出！"
+                FontWeight="Bold">
+                <Button.ToolTip>
+                    ゲーム領域抽出処理をします。
+                </Button.ToolTip>
+            </Button>
+            <Button
+                Width="70"
+                Height="20"
+                Margin="90,0,0,0"
+                HorizontalAlignment="Left"
+                Command="{Binding TrushCommand}"
+                Content="ゴミ箱へ">
+                <Button.ToolTip>
+                    <TextBlock>
+                        原画像をゴミ箱送りにします。<LineBreak />
+                        必ず出力画像が誤抽出されていないか確認してください。</TextBlock>
+                </Button.ToolTip>
+            </Button>
+            <Button
+                Width="70"
+                Height="20"
+                HorizontalAlignment="Left"
+                Command="{Binding ClearCommand}"
+                Content="Clear">
+                <Button.ToolTip>
+                    <TextBlock>
+                        原画像一覧をクリアします。<LineBreak />
+                        画像ファイル自体は消えません。</TextBlock>
+                </Button.ToolTip>
+            </Button>
+        </Grid>
+
+        <Grid Grid.Row="5" Margin="0,6,0,0">
+            <Button
+                Width="70"
+                Height="26"
+                Margin="190,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Command="{Binding CancelCommand}"
+                Content="キャンセル" />
+            <ProgressBar Margin="0,0,100,0" Value="{Binding Progress.Value}" />
+        </Grid>
+    </Grid>
+</Window>
