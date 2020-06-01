@@ -53,6 +53,8 @@ namespace AigisCutter.ViewModel
         public ReactiveProperty<Visibility> VisiblityDeltaOption { get; }
         public ReactiveProperty<Visibility> VisiblityHomebarOption { get; }
 
+        public ReactiveProperty<bool> ShouldCreateDirectory { get; } = new ReactiveProperty<bool>(true);
+
         public ReactiveProperty<bool> CanProcessing { get; } = new ReactiveProperty<bool>(true);
         public ReactiveProperty<long> Progress { get; } = new ReactiveProperty<long>(0);
 
@@ -95,30 +97,31 @@ namespace AigisCutter.ViewModel
             CanProcessing.Value = true;
         }
 
-        private async Task ExecuteAsync()
+        private Task ExecuteAsync(bool shouldCreateDirectory)
         {
             var ct = CancellationToken;
 
-            await Task.Run(() =>
+            return Task.Run(() =>
             {
                 Progress.Value = 0;
                 int count = 0;
-
-                var outputDirectoryPath =
-                    Path.GetDirectoryName(FilePaths.First())
+                var outputDirectoryPath = Path.GetDirectoryName(FilePaths.First())
                     + "\\AigisCutter_"
-                    + DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                    + DateTime.Now.ToString("yyyyMMdd_HHmmss"); ;
 
-                if (Directory.Exists(outputDirectoryPath))
-                    throw new Exception();
+                if (shouldCreateDirectory)
+                {
+                    if (Directory.Exists(outputDirectoryPath))
+                        throw new Exception();
 
-                try
-                {
-                    Directory.CreateDirectory(outputDirectoryPath);
-                }
-                catch (Exception)
-                {
-                    OnError?.Invoke($"出力ディレクトリの作成に失敗しました\r\n{outputDirectoryPath}");
+                    try
+                    {
+                        Directory.CreateDirectory(outputDirectoryPath);
+                    }
+                    catch (Exception)
+                    {
+                        OnError?.Invoke($"出力ディレクトリの作成に失敗しました\r\n{outputDirectoryPath}");
+                    }
                 }
 
                 errorLog = new List<string>();
@@ -131,8 +134,8 @@ namespace AigisCutter.ViewModel
                         ct.ThrowIfCancellationRequested();
                         Progress.Value = 10 + 90 * count++ / FilePaths.Count;
 
-                        var outputPath = outputDirectoryPath
-                            + "\\"
+                        var outputPath = shouldCreateDirectory ? outputDirectoryPath : Path.GetDirectoryName(path);
+                        outputPath += "\\"
                             + Path.GetFileNameWithoutExtension(path)
                             + ".png";
 
@@ -181,12 +184,12 @@ namespace AigisCutter.ViewModel
                         OnError?.Invoke("予期せぬエラーが発生しました");
                     }
                 }
-            }, ct).ConfigureAwait(false);
+            }, ct);
         }
 
-        private async Task TrushASync()
+        private Task TrushASync()
         {
-            await Task.Run(() =>
+            return Task.Run(() =>
             {
                 foreach (var path in FilePaths)
                 {
@@ -197,15 +200,15 @@ namespace AigisCutter.ViewModel
                 }
 
                 FilePaths.ClearOnScheduler();
-            }, CancellationToken).ConfigureAwait(false);
+            }, CancellationToken);
         }
 
-        private async Task ClearAsync()
+        private Task ClearAsync()
         {
-            await Task.Run(() =>
+            return Task.Run(() =>
             {
                 FilePaths.ClearOnScheduler();
-            }, CancellationToken).ConfigureAwait(false);
+            }, CancellationToken);
         }
 
         public MainWindowModel()
@@ -218,11 +221,12 @@ namespace AigisCutter.ViewModel
                 .CombineLatest(CanProcessing, (f, p) => p && FilePaths.Count > 0);
 
             ExecuteCommand = temp.ToAsyncReactiveCommand(CanProcessing)
-                .WithSubscribe(ExecuteAsync);
+                .WithSubscribe(() => ExecuteAsync(ShouldCreateDirectory.Value));
             ClearCommand = temp.ToAsyncReactiveCommand(CanProcessing)
                 .WithSubscribe(ClearAsync);
             TrushCommand = temp.ToAsyncReactiveCommand(CanProcessing)
                 .WithSubscribe(TrushASync);
+
             CancelCommand = CanProcessing
                 .Select(x => !x)
                 .ToReactiveCommand()

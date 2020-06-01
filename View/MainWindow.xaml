@@ -28,6 +28,7 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="76" />
             <RowDefinition Height="64" />
+            <RowDefinition Height="24" />
             <RowDefinition Height="32" />
             <RowDefinition Height="32" />
         </Grid.RowDefinitions>
@@ -135,8 +136,13 @@
             </Grid>
         </StackPanel>
 
+        <CheckBox
+            Grid.Row="4"
+            VerticalAlignment="Center"
+            Content="ディレクトリを作って出力"
+            IsChecked="{Binding ShouldCreateDirectory.Value}" />
 
-        <Grid Grid.Row="4" Margin="0,6,0,0">
+        <Grid Grid.Row="5" Margin="0,6,0,0">
             <Button
                 Width="70"
                 Height="26"
@@ -177,7 +183,7 @@
             </Button>
         </Grid>
 
-        <Grid Grid.Row="5" Margin="0,6,0,0">
+        <Grid Grid.Row="6" Margin="0,6,0,0">
             <Button
                 Width="70"
                 Height="26"
